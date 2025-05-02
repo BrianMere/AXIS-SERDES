@@ -1,0 +1,13 @@
+{
+    "DESIGN_NAME": "top_axi_serdes",
+    "VERILOG_FILES": "dir::/rtl/*.sv", # use previous lab's rtl
+    "CLOCK_PERIOD": 10, # controls speed target of the design. Use 10ns or 100ns to start.
+    # that means 1/CLOCK_PERIOD is the target freq. we are aiming for (in this case 10MHz!)
+    "CLOCK_PORT": "clk",
+    "FP_PDN_VOFFSET": 7,
+    "FP_PDN_HOFFSET": 7,
+    "FP_PDN_SKIPTRIM": true,
+    "RUN_POST_GRT_RESIZER_TIMING": true,
+    "RUN_POST_GRT_DESIGN_REPAIR": true,
+    "SYNTH_AUTONAME": true # Use to keep names consistent w/ my design's. Turn off for large designs.
+}
