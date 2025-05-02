@@ -1,2 +1,2 @@
 # Diagram
-![top_level_diagram.svg]
+![top level diagram](top_level_diagram.svg)
