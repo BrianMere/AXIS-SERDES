@@ -5,5 +5,5 @@ Brian:
 - [ ] User interface AXIS
 
 Henry:
-- [ ] Import IP for 8b/10b enconding/decoding
+- [x] Import IP for 8b/10b enconding/decoding
 - [ ] CDR
