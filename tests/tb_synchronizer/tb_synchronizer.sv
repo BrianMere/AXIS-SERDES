@@ -5,7 +5,7 @@ localparam NUM_FFS    = 4;
 
 parameter MAX_VAL = (1 << LOGIC_SIZE) - 1;
 
-reg [MEMSIZE_BITS:0] counter = 0;
+reg [31:0] counter = 0;
 
 // Sample to drive clock
 localparam CLK_PERIOD = 2;
@@ -21,10 +21,14 @@ synchronizer #(LOGIC_SIZE, NUM_FFS) DUT(.*);
 // Random array for testing
 localparam MEMSIZE = 32;
 localparam MEMSIZE_BITS = $clog2(MEMSIZE);
-bit [LOGIC_SIZE-1:0] mem[0:MEMSIZE];
+logic [LOGIC_SIZE-1:0] mem[0:MEMSIZE-1];
+logic[LOGIC_SIZE-1:0] index;
+logic [LOGIC_SIZE-1:0] data_sel;
 initial begin 
-    foreach (mem[i]) begin 
+    for (int i = 0; i < MEMSIZE; i++) begin 
         mem[i] = $urandom_range(0, MAX_VAL)[LOGIC_SIZE-1:0] ; // implicit cast here...
+        // integer for debugging: mem[i] = i[LOGIC_SIZE-1:0];
+        $display("mem[%0d] = %0h", i, mem[i]);
     end
 end
 
@@ -38,39 +42,54 @@ end
 // Make sure to call finish so test exits
 always begin
 
-    i_reset_n = 0; // active low
+    i_reset_n = 1; // undefined
     i_input_data = 0;
     i_new_clk = 0;
 
     clock();
     clock();
 
+    i_reset_n = 0; // active low
+    
+    clock();
+    clock();
+
     assert(o_output_data == 0) else $error("Failed reset test on synchronization module.");
+
+    i_reset_n = 1; // not active now... 
+    clock();
     while (counter != MEMSIZE) begin
+        i_input_data = mem[counter];
         $display("Testing %d out of %d", counter, MEMSIZE);
         testExpected();
 
-        clock(1);
+        clock();
+        counter++;
         clock();
     end
 
     $finish;
 end
 
-task clock(bit increase_counter=0);
-    if(increase_counter) counter++;
+task clock();
     #(CLK_PERIOD/2); 
     i_new_clk=~i_new_clk;
 endtask
 
-task testExpected();
+always_comb begin 
+    index = (counter[LOGIC_SIZE-1:0] - NUM_FFS);
     if(counter < NUM_FFS) begin
-        assert(o_output_data == 0);
+        data_sel = 0;
     end
     else begin
-        logic[MEMSIZE_BITS:0] index = counter - NUM_FFS;
-        assert(o_output_data == mem[index]);
+        data_sel = mem[index[MEMSIZE_BITS-1:0]];
     end
+end
+
+task testExpected();
+    $display(">> counter=%0d, index=%0d, mem[%0d]=%0h -> data_sel=%0h", counter, index, index[MEMSIZE_BITS-1:0], mem[index[MEMSIZE_BITS-1:0]], data_sel);
+
+    assert(o_output_data == data_sel) else $error("Failed to have valid output data from input data. Got %d but expected %d", o_output_data, data_sel);
     
 endtask
 

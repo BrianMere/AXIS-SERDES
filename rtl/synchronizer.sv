@@ -31,26 +31,18 @@ module synchronizer #(
 
     // Handle entering and exiting reset states (see https://zipcpu.com/blog/2017/10/20/cdc.html)
     // synchronous active low signal, converted from the async module. 
-    logic s_reset_n;
-    generate
-        for(genvar i = 0; i < NUM_FFS; i++) begin
-            always_ff @(posedge i_new_clk, negedge i_reset_n) begin 
-                if(!i_reset_n)
-                    s_reset_n <= 0;
-                else 
-                    s_reset_n <= 1; 
-            end
-        end
-    endgenerate
-
     // Handle stringing the ff's together here... 
+    always_ff @( posedge i_new_clk or negedge i_reset_n ) begin : zero_thFlipFlop
+        if(!i_reset_n) 
+            imm[0] <= 0;
+        else
+            imm[0] <= i_input_data;
+    end
     generate
-        for(genvar i = 0; i < NUM_FFS; i++) begin 
-            always_ff @( posedge i_new_clk ) begin : n_thFlipFlop
-                if(!s_reset_n) 
+        for(genvar i = 1; i < NUM_FFS; i++) begin 
+            always_ff @( posedge i_new_clk or negedge i_reset_n ) begin : n_thFlipFlop
+                if(!i_reset_n) 
                     imm[i] <= 0;
-                else if(i == 0)
-                    imm[0] <= i_input_data;
                 else 
                     imm[i] <= imm[i-1];
             end
