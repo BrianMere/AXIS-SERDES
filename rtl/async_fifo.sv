@@ -69,15 +69,11 @@ module async_fifo #(
 
     // Handle the reading itself (read clock domain)
     always_ff @(posedge i_rclk or negedge i_rst_n) begin : reads
-        if(!i_rst_n) begin r_ptr <= 0; 
-            $display(".r_ptr is being set to %d", r_ptr);
-        end // reset logic
+        if(!i_rst_n) r_ptr <= 0; // reset logic
         else if(!IS_EMPTY() && i_rr) begin 
-            o_rdata <= queue_data[r_ptr];
+            o_rdata <= queue_data[r_ptr+1];
             r_ptr <= r_ptr + 1;
-            $display(".r_ptr is being set to %d", r_ptr+1);
         end
-        
     end
 
 

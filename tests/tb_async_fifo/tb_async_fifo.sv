@@ -29,29 +29,32 @@ end
 
 // Random array for testing
 localparam MEMSIZE = 64;
-localparam MEMSIZE_BITS = $clog2(MEMSIZE);
-bit [LOGIC_SIZE-1:0] mem[0:MEMSIZE];
-int read_ptr = 0;
-int write_ptr = 0;
+localparam MEMSIZE_BITS = $clog2(MEMSIZE)-1;
+bit [LOGIC_SIZE-1:0] mem[0:MEMSIZE-1];
+logic [MEMSIZE_BITS:0] read_ptr = 0;
+logic [MEMSIZE_BITS:0] write_ptr = 0;
 parameter MAX_VAL = (1 << LOGIC_SIZE) - 1;
 initial begin 
     for (int i = 0; i < MEMSIZE; i++) begin 
-        //mem[i] = $urandom_range(0, MAX_VAL)[LOGIC_SIZE-1:0] ; // implicit cast here...
-        mem[i] = i;
+        mem[i] = $urandom_range(0, MAX_VAL)[LOGIC_SIZE-1:0] ; // implicit cast here...
+        //mem[i] = i;
         $display("mem[%d] = %d", i, mem[i]);
     end
 end
 
 // Handle the logic of syncronizing the designed FIFO with ours, considering the clocking
-always @(posedge i_wclk) begin 
+always @(negedge i_wclk) begin 
     if(i_rst_n && i_wr && !o_wfull) begin 
       write_ptr <= write_ptr + 1;
     end
 end 
-always @(posedge i_rclk) begin 
-    #(TIME_PERIOD/2);
-    if(i_rst_n && i_rr && !o_rempty) begin 
-        assert(mem[read_ptr] == o_rdata) else $error("FIFO contents on read didn't match. Expected %d but got %d.", mem[read_ptr], o_rdata);
+logic check_empty = 0;
+always @(negedge i_rclk) begin 
+
+    if(!o_rempty)
+        check_empty = 1;
+    else if(i_rst_n && i_rr && check_empty && !o_rempty) begin 
+        assert(mem[read_ptr] == o_rdata) else $error("FIFO contents on read didn't match. Expected %h but got %h.", mem[read_ptr], o_rdata);
         read_ptr <= read_ptr + 1;
     end
 end
