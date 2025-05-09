@@ -128,7 +128,7 @@ module axis_interface #(
     end
 
     always_ff @(posedge s_axis_aclk) begin
-        s_axis_tdata[o_strobe_sel*8 +: 8] = o_selected_data;
+        s_axis_tdata[o_strobe_sel*8 +: 8] <= o_selected_data;
     end
 
 endmodule 

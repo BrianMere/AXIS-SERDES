@@ -1,6 +1,6 @@
 {
     "DESIGN_NAME": "top_axi_serdes",
-    "VERILOG_FILES": "dir::/rtl/*.sv", # use previous lab's rtl
+    "VERILOG_FILES": "dir::/rtl/*.sv", 
     "CLOCK_PERIOD": 10, # controls speed target of the design. Use 10ns or 100ns to start.
     # that means 1/CLOCK_PERIOD is the target freq. we are aiming for (in this case 10MHz!)
     "CLOCK_PORT": "clk",
