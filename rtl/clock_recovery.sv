@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module clock_recovery #(parameter int N_PHASE=5) (
     input ref_clk,
     input [N_PHASE-1:0] clk_phase,
