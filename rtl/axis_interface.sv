@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module axis_interface #(
     parameter LOGIC_SIZE = 32
 )
@@ -18,8 +19,12 @@ module axis_interface #(
     input logic s_axis_ready,   // subordinate controlled axis ready
 
     // Design-specific signals
-    output logic [7:0] o_to_encoder, // to our 8b/10b encoder
-    input logic [7:0] i_from_decoder // from our 8b/10b decoder
+    output logic [7:0] o_to_fifo, // to our fifo
+    input logic w_full,              // from the fifo to say it's full...
+    output logic w_req,              // data from the fifo to control writes
+    input logic [7:0] i_from_fifo,// from our fifo
+    input logic r_empty,             // from the fifo to say it's empty
+    output logic r_req               // to the fifo to say to read request or not
 );
 
     localparam FIFO_SIZE = LOGIC_SIZE/8; // 4 by default
@@ -33,6 +38,10 @@ module axis_interface #(
     // Input interface AXIS handling
 
     logic i_wr_en, i_rd_en, i_empty, i_full;
+    always_comb begin 
+        w_req  = i_wr_en;
+        r_req  = i_rd_en;
+    end
     data_t i_selected_data;
     strobe_t i_strobe_sel;
 
@@ -57,12 +66,12 @@ module axis_interface #(
         end
         else begin 
             m_axis_ready <= 1;
-            if(m_axis_valid && !i_full) // the user wants to send data, so try
+            if(m_axis_valid && !i_full && !r_empty) // the user wants to send data, so try
                 i_wr_en <= 1;
             else 
                 i_wr_en <= 0;
 
-            if(!i_empty) begin  // on a non-empty, read one set of bytes and iterate over the strobe. 
+            if(!i_empty && !w_full) begin  // on a non-empty, read one set of bytes and iterate over the strobe. 
                 if(i_strobe_sel == strobe_t'(-1)) begin 
                     i_strobe_sel <= 0;
                     i_rd_en <= 1;
@@ -77,9 +86,9 @@ module axis_interface #(
 
     always_comb begin
         if(!m_axis_reset_n)
-            o_to_encoder = 0;
+            o_to_fifo = 0;
         else 
-            o_to_encoder = i_selected_data[i_strobe_sel*8 +: 8];
+            o_to_fifo = i_selected_data[i_strobe_sel*8 +: 8];
     end
 
     // Output interface AXIS handling
@@ -93,7 +102,7 @@ module axis_interface #(
         .clk(s_axis_aclk), 
         .wr_en(o_wr_en), 
         .rd_en(o_rd_en), 
-        .din(i_from_decoder), 
+        .din(i_from_fifo), 
         .dout(o_selected_data), 
         .empty(o_empty), 
         .full(o_full)
@@ -109,12 +118,12 @@ module axis_interface #(
         end
         else begin 
             s_axis_valid <= 1;
-            if(s_axis_ready && !o_full) // the user wants to receive data, so try
+            if(s_axis_ready && !o_full && !r_empty) // the user wants to receive data, so try
                 o_wr_en <= 1;
             else 
                 o_wr_en <= 0;
 
-            if(!o_empty) begin  // on a non-empty, read one set of bytes and iterate over the strobe. 
+            if(!o_empty && !w_full) begin  // on a non-empty, read one set of bytes and iterate over the strobe. 
                 if(i_strobe_sel == strobe_t'(-1)) begin 
                     o_strobe_sel <= 0;
                     o_rd_en <= 1;

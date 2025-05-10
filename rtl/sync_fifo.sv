@@ -1,4 +1,5 @@
 /** From https://www.chipverify.com/verilog/synchronous-fifo */
+`timescale 1ns / 1ps
 module sync_fifo #(parameter DEPTH=8, DWIDTH=16)
 (
         input               	rstn,               // Active low reset

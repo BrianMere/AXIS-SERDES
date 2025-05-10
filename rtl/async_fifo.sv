@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 // Return the grey code for the input'ed value. Only works for counter values (ie: sequential values)
 `define GREY_CODE(val) ((val) ^ ((val) >> 1))
 
