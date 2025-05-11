@@ -1,9 +1,8 @@
 {
     "DESIGN_NAME": "top_axi_serdes",
-    "VERILOG_FILES": "dir::/rtl/*.sv", 
-    "CLOCK_PERIOD": 10, # controls speed target of the design. Use 10ns or 100ns to start.
-    # that means 1/CLOCK_PERIOD is the target freq. we are aiming for (in this case 10MHz!)
-    "CLOCK_PORT": "clk",
+    "VERILOG_FILES": "dir::/rtl/*v", 
+    "PNR_SDC_FILE": "dir::constraints.sdc", # contains clock information
+    "SIGNOFF_SDC_FILE": "dir::constraints.sdc",
     "FP_PDN_VOFFSET": 7,
     "FP_PDN_HOFFSET": 7,
     "FP_PDN_SKIPTRIM": true,

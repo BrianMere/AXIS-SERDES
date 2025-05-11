@@ -1,5 +1,13 @@
 module tb_async_fifo;
 
+`ifdef USE_POWER_PINS
+    wire VPWR;
+    wire VGND;
+    assign VPWR=1;
+    assign VGND=0;
+`endif
+
+
 // Params for the DUT
 localparam LOGIC_SIZE = 32;
 localparam FIFO_SIZE  = 128;

@@ -15,4 +15,4 @@ module priority_encoder #(parameter int WIDTH=8) (
         end
     end
 
-endmodule;
+endmodule

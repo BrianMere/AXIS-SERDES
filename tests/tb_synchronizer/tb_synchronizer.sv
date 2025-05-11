@@ -1,5 +1,12 @@
 module tb_synchronizer;
 
+`ifdef USE_POWER_PINS
+    wire VPWR;
+    wire VGND;
+    assign VPWR=1;
+    assign VGND=0;
+`endif
+
 localparam LOGIC_SIZE = 9; // can test only up to 32 bits
 localparam NUM_FFS    = 4;
 

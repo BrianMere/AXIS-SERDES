@@ -1,5 +1,13 @@
 `timescale 1ns/1ps
 module tb_clock_recovery();
+
+`ifdef USE_POWER_PINS
+    wire VPWR;
+    wire VGND;
+    assign VPWR=1;
+    assign VGND=0;
+`endif
+
     localparam int NumPhase = 5;
     localparam byte Payload = 8'hAA;
 

@@ -24,7 +24,7 @@ module comma_detector #(
     logic kout;
 
 
-    always_ff @(posedge clk or posedge rst) begin 
+    always_ff @(posedge clk) begin 
         if(rst) shift_reg <= 0;
         else shift_reg <= {shift_reg[9:1] , strobin};
 

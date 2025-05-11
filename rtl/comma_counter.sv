@@ -36,13 +36,11 @@ module comma_counter #(
         strobe_bit = encoded_data[b_counter]; // the strobe selects the n-th bit
     end
 
-    always_ff @(posedge clk or posedge rst) begin : Strobe
+    always_ff @(posedge clk) begin : Strobe
         if(rst) b_counter <= 0;
         else if (b_counter == 9) b_counter <= 0; //loopback
         else if (clk) b_counter <= b_counter+1;
-    end
 
-    always_ff @(posedge b_counter or posedge rst) begin : PacketCount
         if(rst) c_counter <= 0;
         else if (b_counter == 9) c_counter <= c_counter+1;
     end

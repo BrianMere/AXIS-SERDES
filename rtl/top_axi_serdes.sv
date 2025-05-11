@@ -39,25 +39,26 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
 
     // User Space
 
-    axis_interface #(LOGIC_SIZE) AXIS_Interface(
+    axis_m_interface #(LOGIC_SIZE) AXIS_M_Interface(
         .m_axis_reset_n(m_axis_reset_n), 
         .m_axis_aclk(m_axis_aclk), 
         .m_axis_tdata(m_axis_tdata), 
         .m_axis_valid(m_axis_valid), 
         .m_axis_ready(m_axis_ready), 
+        .o_to_fifo(to_tx_fifo), 
+        .w_full(tx_fifo_full), 
+        .w_req(tx_fifo_wen)
+    );
 
+    axis_s_interface #(LOGIC_SIZE) AXIS_S_Interface(
         .s_axis_reset_n(s_axis_reset_n), 
         .s_axis_aclk(s_axis_aclk), 
         .s_axis_tdata(s_axis_tdata), 
         .s_axis_valid(s_axis_valid), 
         .s_axis_ready(s_axis_ready), 
-
-        .o_to_fifo(to_tx_fifo), 
-        .w_full(tx_fifo_full), 
-        .w_req(tx_fifo_wen), 
         .i_from_fifo(from_rx_fifo), 
         .r_empty(rx_fifo_empty), 
-        .r_req(tx_fifo_ren)
+        .r_req(rx_fifo_ren)
     );
 
     async_fifo #(FIFO_SIZE, 8) TXFIFO(
