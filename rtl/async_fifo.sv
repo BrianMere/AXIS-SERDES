@@ -9,8 +9,8 @@
 `define IS_EMPTY() (r_gray == wgray_s)
 
 // Returns if the FIFO is full or not. Only works from the write clock domain. 
-`define IS_FULL() ((w_gray[GRAY_WIDTH-1:GRAY_WIDTH-2] == ~rgray_s[GRAY_WIDTH-1:GRAY_WIDTH-2]) \
-        && (w_gray[GRAY_WIDTH-3:0] == rgray_s[GRAY_WIDTH-3:0]))
+`define IS_FULL() ((w_gray[GRAY_WIDTH:GRAY_WIDTH-1] == ~rgray_s[GRAY_WIDTH:GRAY_WIDTH-1]) \
+        && (w_gray[GRAY_WIDTH-2:0] == rgray_s[GRAY_WIDTH-2:0]))
 
 module async_fifo #(
     parameter FIFO_SIZE = 32,  // Number of 'logics' in our fifo
@@ -33,7 +33,7 @@ module async_fifo #(
 
 );
     localparam GRAY_WIDTH = $clog2(FIFO_SIZE);
-    typedef logic [GRAY_WIDTH-1:0] fifo_ptr_t;
+    typedef logic [GRAY_WIDTH:0] fifo_ptr_t;
 
     logic [FIFO_SIZE-1:0] [LOGIC_SIZE-1:0] queue_data; // driven here
 
@@ -44,7 +44,7 @@ module async_fifo #(
     fifo_ptr_t rgray_s, wgray_s; // driven by synch.
 
     // Read-to-write grey code clock domain synch.
-    synchronizer #(GRAY_WIDTH, 2) ReadToWrite(
+    synchronizer #(GRAY_WIDTH+1, 2) ReadToWrite(
         .i_reset_n(i_rst_n), 
         .i_input_data(`GREY_CODE(r_ptr)), 
         .i_new_clk(i_wclk), 
@@ -52,7 +52,7 @@ module async_fifo #(
     );
 
     // Write-to-read grey code clock domain synch.
-    synchronizer #(GRAY_WIDTH, 2) WriteToRead(
+    synchronizer #(GRAY_WIDTH+1, 2) WriteToRead(
         .i_reset_n(i_rst_n), 
         .i_input_data(`GREY_CODE(w_ptr)), 
         .i_new_clk(i_rclk), 
