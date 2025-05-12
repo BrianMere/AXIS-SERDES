@@ -46,7 +46,7 @@ module async_fifo #(
     // Read-to-write grey code clock domain synch.
     synchronizer #(GRAY_WIDTH+1, 2) ReadToWrite(
         .i_reset_n(i_rst_n), 
-        .i_input_data(`GREY_CODE(r_ptr)), 
+        .i_input_data(r_gray), 
         .i_new_clk(i_wclk), 
         .o_output_data(rgray_s)
     );
@@ -54,7 +54,7 @@ module async_fifo #(
     // Write-to-read grey code clock domain synch.
     synchronizer #(GRAY_WIDTH+1, 2) WriteToRead(
         .i_reset_n(i_rst_n), 
-        .i_input_data(`GREY_CODE(w_ptr)), 
+        .i_input_data(w_gray), 
         .i_new_clk(i_rclk), 
         .o_output_data(wgray_s)
     );
@@ -83,14 +83,14 @@ module async_fifo #(
         end
     end
 
-
-    // DEBUG Variables
+    // make sure that the gray codes are registered! This is important for all bits
+    // to hit the clock domain crossing at the same time!
     fifo_ptr_t r_gray, w_gray;
-    always_comb begin : grayCodeDebug
+    always_ff @(posedge i_rclk) begin
         r_gray = `GREY_CODE(r_ptr);
+    end
+    always_ff @(posedge i_wclk) begin 
         w_gray = `GREY_CODE(w_ptr);
     end
-
-
     
 endmodule
