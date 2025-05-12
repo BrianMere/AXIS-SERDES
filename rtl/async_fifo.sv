@@ -90,7 +90,7 @@ module async_fifo #(
         if(!i_rst_n) r_gray <= 0; 
         else r_gray <= `GREY_CODE(r_ptr);
     end
-    always_ff @(posedge i_wclk) begin 
+    always_ff @(posedge i_wclk or negedge i_rst_n) begin 
         if(!i_rst_n) w_gray <= 0; 
         else w_gray <= `GREY_CODE(w_ptr);
     end
