@@ -86,11 +86,13 @@ module async_fifo #(
     // make sure that the gray codes are registered! This is important for all bits
     // to hit the clock domain crossing at the same time!
     fifo_ptr_t r_gray, w_gray;
-    always_ff @(posedge i_rclk) begin
-        r_gray = `GREY_CODE(r_ptr);
+    always_ff @(posedge i_rclk or negedge i_rst_n) begin
+        if(!i_rst_n) r_gray <= 0; 
+        else r_gray <= `GREY_CODE(r_ptr);
     end
     always_ff @(posedge i_wclk) begin 
-        w_gray = `GREY_CODE(w_ptr);
+        if(!i_rst_n) w_gray <= 0; 
+        else w_gray <= `GREY_CODE(w_ptr);
     end
     
 endmodule
