@@ -3,14 +3,14 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
 (
     // From clock domain I (input)
     input logic s_axis_reset_n, // active low input clock domain reset
-    input logic s_axis_aclk, // input clock domain clock
+    output logic s_axis_aclk, // input clock domain clock
     input logic [LOGIC_SIZE-1:0] s_axis_tdata, // transmit data for the input
     input logic s_axis_valid,  // manager controlled axis valid 
     output logic s_axis_ready, // manager receiving axis ready
 
     // From clock domain O (output)
     input logic m_axis_reset_n, // active low output clock domain reset
-    input logic m_axis_aclk, // input clock domain clock
+    output logic m_axis_aclk, // input clock domain clock
     output logic [LOGIC_SIZE-1:0] m_axis_tdata, // transmit data from the output
     output logic m_axis_valid,  // subordinate receiving axis valid 
     input logic m_axis_ready,   // subordinate controlled axis ready
@@ -116,5 +116,31 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
         .o_rdata(from_rx_fifo),
         .o_rempty(rx_fifo_empty) 
     );
+
+    // Counter for just the clocking to work... 
+    logic [2:0] count_s, count_m; // count to 4 to make it an eighth of the frequency
+    always_ff @(posedge tx_clk) begin : TX_CLK_AXIS_OUT
+    if (!s_axis_reset_n) begin
+        count_s <= 0;
+        s_axis_aclk <= 0;
+    end else begin
+        count_s <= count_s + 1;
+        if (count_s == 0)
+            s_axis_aclk <= !s_axis_aclk;
+    end
+end
+
+always_ff @(posedge rx_clk) begin : RX_CLK_AXIS_OUT
+    if (!m_axis_reset_n) begin
+        count_m <= 0;
+        m_axis_aclk <= 0;
+    end else begin
+        count_m <= count_m + 1;
+        if (count_m == 0)
+            m_axis_aclk <= !m_axis_aclk;
+    end
+end
+
+    
 
 endmodule 
