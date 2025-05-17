@@ -2,18 +2,18 @@
 module top_axi_serdes #(parameter NUM_PHASES = 5)
 (
     // From clock domain I (input)
-    input logic m_axis_reset_n, // active low input clock domain reset
-    input logic m_axis_aclk, // input clock domain clock
-    input logic [LOGIC_SIZE-1:0] m_axis_tdata, // transmit data for the input
-    input logic m_axis_valid,  // manager controlled axis valid 
-    output logic m_axis_ready, // manager receiving axis ready
+    input logic s_axis_reset_n, // active low input clock domain reset
+    input logic s_axis_aclk, // input clock domain clock
+    input logic [LOGIC_SIZE-1:0] s_axis_tdata, // transmit data for the input
+    input logic s_axis_valid,  // manager controlled axis valid 
+    output logic s_axis_ready, // manager receiving axis ready
 
     // From clock domain O (output)
-    input logic s_axis_reset_n, // active low output clock domain reset
-    input logic s_axis_aclk, // input clock domain clock
-    output logic [LOGIC_SIZE-1:0] s_axis_tdata, // transmit data from the output
-    output logic s_axis_valid,  // subordinate receiving axis valid 
-    input logic s_axis_ready,   // subordinate controlled axis ready
+    input logic m_axis_reset_n, // active low output clock domain reset
+    input logic m_axis_aclk, // input clock domain clock
+    output logic [LOGIC_SIZE-1:0] m_axis_tdata, // transmit data from the output
+    output logic m_axis_valid,  // subordinate receiving axis valid 
+    input logic m_axis_ready,   // subordinate controlled axis ready
 
     // Clocks
     input logic tx_clk,         // used in the transmit clock domain
@@ -39,31 +39,32 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
 
     // User Space
 
-    axis_m_interface #(LOGIC_SIZE) AXIS_M_Interface(
-        .m_axis_reset_n(m_axis_reset_n), 
-        .m_axis_aclk(m_axis_aclk), 
-        .m_axis_tdata(m_axis_tdata), 
-        .m_axis_valid(m_axis_valid), 
-        .m_axis_ready(m_axis_ready), 
+    // I'm going to keep the names of the smaller modules, so the master is the one transmitting other than in the top module
+    axis_m_interface #(LOGIC_SIZE) AXIS_S_Interface(
+        .m_axis_reset_n(s_axis_reset_n), 
+        .m_axis_aclk(s_axis_aclk), 
+        .m_axis_tdata(s_axis_tdata), 
+        .m_axis_valid(s_axis_valid), 
+        .m_axis_ready(s_axis_ready), 
         .o_to_fifo(to_tx_fifo), 
         .w_full(tx_fifo_full), 
         .w_req(tx_fifo_wen)
     );
 
-    axis_s_interface #(LOGIC_SIZE) AXIS_S_Interface(
-        .s_axis_reset_n(s_axis_reset_n), 
-        .s_axis_aclk(s_axis_aclk), 
-        .s_axis_tdata(s_axis_tdata), 
-        .s_axis_valid(s_axis_valid), 
-        .s_axis_ready(s_axis_ready), 
+    axis_s_interface #(LOGIC_SIZE) AXIS_M_Interface(
+        .s_axis_reset_n(m_axis_reset_n), 
+        .s_axis_aclk(m_axis_aclk), 
+        .s_axis_tdata(m_axis_tdata), 
+        .s_axis_valid(m_axis_valid), 
+        .s_axis_ready(m_axis_ready), 
         .i_from_fifo(from_rx_fifo), 
         .r_empty(rx_fifo_empty), 
         .r_req(rx_fifo_ren)
     );
 
     async_fifo #(FIFO_SIZE, 8) TXFIFO(
-        .i_rst_n(m_axis_reset_n), 
-        .i_wclk(m_axis_aclk), 
+        .i_rst_n(s_axis_reset_n), 
+        .i_wclk(s_axis_aclk), 
         .i_wr(tx_fifo_wen), 
         .i_wdata(to_tx_fifo), 
         .o_wfull(tx_fifo_full),
@@ -75,7 +76,7 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
 
     // consider in TX land: from_tx_fifo, tx_fifo_ren, tx_fifo_empty 
     comma_counter #(NUM_BYTES_PER_PACKET) comma_counter(
-        .rst(!m_axis_reset_n), 
+        .rst(!s_axis_reset_n), 
         .din(from_tx_fifo), 
         .clk(tx_clk),
         .fifo_ren(tx_fifo_ren), 
@@ -89,14 +90,14 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
     clock_recovery #(NUM_PHASES) clock_recovery(
         .ref_clk(rx_clk),
         .clk_phase(clk_phase), 
-        .rst_n(s_axis_reset_n), 
+        .rst_n(m_axis_reset_n), 
         .data_in(strobe_bit), 
         .data_out(strobe_fixed)
     );
 
     // consider in RX land: to_rx_fifo, rx_fifo_wen, rx_fifo_full
     comma_detector #(NUM_BYTES_PER_PACKET) comma_detector(
-        .rst(!s_axis_reset_n), 
+        .rst(!m_axis_reset_n), 
         .strobin(strobe_fixed), 
         .clk(rx_clk), 
         .fifo_wen(rx_fifo_wen), 
@@ -105,8 +106,8 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
     );
 
     async_fifo #(FIFO_SIZE, 8) RXFIFO(
-        .i_rst_n(s_axis_reset_n), 
-        .i_wclk(s_axis_aclk), 
+        .i_rst_n(m_axis_reset_n), 
+        .i_wclk(m_axis_aclk), 
         .i_wr(rx_fifo_wen), 
         .i_wdata(to_rx_fifo), 
         .o_wfull(rx_fifo_full), 
