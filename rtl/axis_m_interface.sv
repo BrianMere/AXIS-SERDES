@@ -22,14 +22,11 @@ module axis_m_interface #(
     typedef logic[LOGIC_SIZE-1:0] data_t;
 
     // Input interface AXIS handling
-
     logic i_wr_en, i_rd_en, i_empty, i_full;
-    always_comb begin 
-        w_req  = i_wr_en;
-    end
     data_t i_selected_data;
     strobe_t i_strobe_sel;
 
+    // our transmitted data goes into the FIFO and then is parsed by us to the aFIFO
     sync_fifo #(FIFO_SIZE, LOGIC_SIZE) i_FIFO(
         .rstn(m_axis_reset_n), 
         .clk(m_axis_aclk), 
@@ -45,26 +42,41 @@ module axis_m_interface #(
         if(!m_axis_reset_n) begin // reset as wel on 
             m_axis_ready <= 0;
             i_wr_en <= 0;
-            i_rd_en <= 0;
             i_strobe_sel <= 0;
         end
         else begin 
-            m_axis_ready <= 1;
-            if(m_axis_valid && !i_full && !w_full) // the user wants to send data, so try
+            
+            if(m_axis_valid && !i_full) begin // the user wants to send data, so try to put into the FIFO
                 i_wr_en <= 1;
-            else 
+                m_axis_ready <= 1;
+            end
+            else begin // we don't have to write if the data isn't valid, or if we can't write internally
                 i_wr_en <= 0;
+                m_axis_ready <= 0;
+            end
 
-            if(!i_empty) begin  // on a non-empty, read one set of bytes and iterate over the strobe. 
-                if(i_strobe_sel == strobe_t'(-1)) begin 
-                    i_strobe_sel <= 0;
-                    i_rd_en <= 1;
+            if(!i_empty && !w_full) begin  // on a non-empty (internal FIFO), read one set of bytes and iterate over the strobe. 
+                w_req <= 1; // we are going to a new byte, so we have to write it to the FIFO
+                if(i_strobe_sel == strobe_t'('1)) begin
+                    i_strobe_sel <= 0; 
                 end
                 else begin 
                     i_strobe_sel <= i_strobe_sel + 1;
-                    i_rd_en <= 0;
                 end
             end
+            else begin 
+                w_req <= 0; // don't rewrite the same data to the aFIFO
+            end
+        
+        end
+    end
+
+    always_comb begin
+        if(!i_empty && i_strobe_sel == strobe_t'('1)) begin
+            i_rd_en = 1;
+        end
+        else begin 
+            i_rd_en = 0;
         end
     end
 

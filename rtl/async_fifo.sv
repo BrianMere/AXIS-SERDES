@@ -78,7 +78,7 @@ module async_fifo #(
     always_ff @(posedge i_rclk or negedge i_rst_n) begin : reads
         if(!i_rst_n) r_ptr <= 0; // reset logic
         else if(!`IS_EMPTY() && i_rr) begin 
-            o_rdata <= queue_data[r_ptr+1];
+            o_rdata <= queue_data[r_ptr];
             r_ptr <= r_ptr + 1;
         end
     end

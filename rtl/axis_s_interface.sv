@@ -24,52 +24,70 @@ module axis_s_interface #(
     // Output interface AXIS handling
 
     logic o_wr_en, o_rd_en, o_empty, o_full;
-    always_comb begin 
-        r_req  = o_rd_en;
-    end
-    logic [7:0] o_selected_data;
+    logic [LOGIC_SIZE-1:0] o_selected_data;
     strobe_t o_strobe_sel;
 
-    sync_fifo #(FIFO_SIZE, 8) o_FIFO(
+    always_ff @(posedge s_axis_aclk or negedge s_axis_reset_n) begin
+        if(!s_axis_reset_n) begin // reset as wel on 
+            s_axis_valid <= 0;
+            o_wr_en <= 0;
+            o_strobe_sel <= 0;
+        end
+        else begin 
+            
+            if(s_axis_ready && !o_full && 
+                o_strobe_sel == strobe_t'('1)
+            ) begin // the user wants to receive data, so try to pull from the FIFO
+                o_wr_en <= 1;
+                s_axis_valid <= 1;
+            end
+            else o_wr_en <= 0;
+            if(!s_axis_ready) s_axis_valid <= 0;
+
+            if(!o_full && !r_empty) begin  // on a non-full (internal FIFO), read one set of bytes and iterate over the strobe. 
+
+                r_req <= 1; // we are going to a new byte, so we have to write it to the FIFO
+                o_selected_data[o_strobe_sel*8 +: 8] <= i_from_fifo;
+
+                if(o_strobe_sel == strobe_t'('1)) begin
+                    o_strobe_sel <= 0;
+                end
+                else begin 
+                    o_strobe_sel <= o_strobe_sel + 1;
+                end
+            end
+            else begin 
+                r_req <= 0; // don't rewrite the same data to the aFIFO
+            end
+
+            if(!o_empty) begin 
+                if(o_strobe_sel == strobe_t'('1))
+                    o_strobe_sel <= 0;
+                else 
+                    o_strobe_sel <= o_strobe_sel + 1;
+            end
+        
+        end
+    end
+
+    always_comb begin
+        if(!o_empty) begin
+            o_rd_en = 1;
+        end
+        else begin 
+            o_rd_en = 0;
+        end
+    end
+
+    sync_fifo #(FIFO_SIZE, LOGIC_SIZE) o_FIFO(
         .rstn(s_axis_reset_n), 
         .clk(s_axis_aclk), 
         .wr_en(o_wr_en), 
         .rd_en(o_rd_en), 
-        .din(i_from_fifo), 
-        .dout(o_selected_data), 
+        .din(o_selected_data), 
+        .dout(s_axis_tdata), 
         .empty(o_empty), 
         .full(o_full)
     );
-
-    always_ff @(posedge s_axis_aclk or negedge s_axis_reset_n) begin
-        if(!s_axis_reset_n) begin
-            s_axis_valid <= 0;
-            o_wr_en <= 0;
-            o_rd_en <= 0;
-            o_strobe_sel <= 0;
-        end
-        else begin 
-            s_axis_valid <= 1;
-            if(s_axis_ready && !o_full && !o_full) // the user wants to receive data, so try
-                o_wr_en <= 1;
-            else 
-                o_wr_en <= 0;
-
-            if(!o_empty) begin  // on a non-empty, read one set of bytes and iterate over the strobe. 
-                if(o_strobe_sel == strobe_t'(-1)) begin 
-                    o_strobe_sel <= 0;
-                    o_rd_en <= 1;
-                end
-                else begin 
-                    o_strobe_sel <= o_strobe_sel + 1;
-                    o_rd_en <= 0;
-                end
-            end
-        end
-    end
-
-    always_ff @(posedge s_axis_aclk) begin
-        s_axis_tdata[o_strobe_sel*8 +: 8] <= o_selected_data;
-    end
 
 endmodule 

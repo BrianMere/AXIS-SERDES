@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module tb_top_axi_serdes;
 
 `ifdef USE_POWER_PINS
@@ -42,7 +43,7 @@ assign s_axis_reset_n = m_axis_reset_n;
 
 // Make sure to call finish so test exits
 always begin
-    $dumpfile("tb_clock_recovery.vcd");
+    $dumpfile("tb_top_axi_serdes.vcd");
     $dumpvars(0);
     m_axis_reset_n <= 0;
     s_axis_valid <= 0;

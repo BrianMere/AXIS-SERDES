@@ -40,7 +40,7 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
     // User Space
 
     // I'm going to keep the names of the smaller modules, so the master is the one transmitting other than in the top module
-    axis_m_interface #(LOGIC_SIZE) AXIS_S_Interface(
+    axis_m_interface #(LOGIC_SIZE) AXIS_M_Interface(
         .m_axis_reset_n(s_axis_reset_n), 
         .m_axis_aclk(s_axis_aclk), 
         .m_axis_tdata(s_axis_tdata), 
@@ -51,7 +51,7 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
         .w_req(tx_fifo_wen)
     );
 
-    axis_s_interface #(LOGIC_SIZE) AXIS_M_Interface(
+    axis_s_interface #(LOGIC_SIZE) AXIS_S_Interface(
         .s_axis_reset_n(m_axis_reset_n), 
         .s_axis_aclk(m_axis_aclk), 
         .s_axis_tdata(m_axis_tdata), 
@@ -107,11 +107,11 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
 
     async_fifo #(FIFO_SIZE, 8) RXFIFO(
         .i_rst_n(m_axis_reset_n), 
-        .i_wclk(m_axis_aclk), 
+        .i_wclk(rx_clk), 
         .i_wr(rx_fifo_wen), 
         .i_wdata(to_rx_fifo), 
         .o_wfull(rx_fifo_full), 
-        .i_rclk(rx_clk), 
+        .i_rclk(m_axis_aclk), 
         .i_rr(rx_fifo_ren), 
         .o_rdata(from_rx_fifo),
         .o_rempty(rx_fifo_empty) 
@@ -120,26 +120,26 @@ module top_axi_serdes #(parameter NUM_PHASES = 5)
     // Counter for just the clocking to work... 
     logic [2:0] count_s, count_m; // count to 4 to make it an eighth of the frequency
     always_ff @(posedge tx_clk) begin : TX_CLK_AXIS_OUT
-    if (!s_axis_reset_n) begin
-        count_s <= 0;
-        s_axis_aclk <= 0;
-    end else begin
-        count_s <= count_s + 1;
-        if (count_s == 0)
-            s_axis_aclk <= !s_axis_aclk;
+        if (!s_axis_reset_n) begin
+            count_s <= 0;
+            s_axis_aclk <= 0;
+        end else begin
+            count_s <= count_s + 1;
+            if (count_s == 0)
+                s_axis_aclk <= !s_axis_aclk;
+        end
     end
-end
 
-always_ff @(posedge rx_clk) begin : RX_CLK_AXIS_OUT
-    if (!m_axis_reset_n) begin
-        count_m <= 0;
-        m_axis_aclk <= 0;
-    end else begin
-        count_m <= count_m + 1;
-        if (count_m == 0)
-            m_axis_aclk <= !m_axis_aclk;
+    always_ff @(posedge rx_clk) begin : RX_CLK_AXIS_OUT
+        if (!m_axis_reset_n) begin
+            count_m <= 0;
+            m_axis_aclk <= 0;
+        end else begin
+            count_m <= count_m + 1;
+            if (count_m == 0)
+                m_axis_aclk <= !m_axis_aclk;
+        end
     end
-end
 
     
 

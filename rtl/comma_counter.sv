@@ -1,4 +1,9 @@
 `timescale 1ns / 1ps
+
+`define KIN_VAL (c_counter == 0 || fifo_empty)
+
+`define COMMA 8'hBC
+
 /**
   Wrapper to try to take in 8B packets at a time to know when we
   should send the normal packet (encoded), or we should send the 
@@ -21,19 +26,29 @@ module comma_counter #(
     logic [$clog2(NUM_BYTES_PER_PACKET)-1:0] c_counter; // byte per packet counter
     logic [3:0] b_counter; // bit strobe counter, needs to count to 10
     logic kin; // used to denote K sel (1) or D sel (0)
+    logic kin_err; // we need to track this to see if we were too quick on the encoder. Repeat if that's the case. 
     logic [9:0] encoded_data;
     logic [7:0] enc_in; // mux between the comma byte and the not comma byte
+    
+    always_comb begin : ReadingFromFIFO
+        // Always needs to be combinational, based on CURRENT state
+        fifo_ren = !(`KIN_VAL) && b_counter == 9; // kin is high for commas, so we should not read on comma sends. 
+        strobe_bit = encoded_data[b_counter]; // the strobe selects the n-th bit      
+    end
 
-    always_comb begin : SendingCommaFlag
-        kin = (c_counter == 0 || fifo_empty);
-        fifo_ren = !kin && b_counter == 9; // kin is high for commas, so we should not read on comma sends. 
-
-        case (kin)
-            0: enc_in = 8'hBC;
-            1: enc_in = din;
-        endcase
-
-        strobe_bit = encoded_data[b_counter]; // the strobe selects the n-th bit
+    always_ff @(posedge clk) begin : HoldEncoderInputs
+        if(rst || kin_err) begin // only 'send' commas for resets and errors of the kin
+            kin <= 1;
+            enc_in <= `COMMA;
+        end
+        else if (b_counter == 8) begin // update on the new comma count
+            kin <= `KIN_VAL;
+            case (`KIN_VAL)
+                1: enc_in <= `COMMA;
+                0: enc_in <= din;
+            endcase
+        end
+        // otherwise HOLD the encoder inputs
     end
 
     always_ff @(posedge clk) begin : Strobe
@@ -48,12 +63,12 @@ module comma_counter #(
     encoder_8b10 encode_this(
         .clk(clk), 
         .rst(rst), 
-        .en(1), 
+        .en(b_counter == 9), 
         .kin(kin), 
         .din(enc_in), 
         .dout(encoded_data),
         .disp(), // we don't care, but gives info on whether P or N are used.
-        .kin_err() // not connected (ignoring errors)
+        .kin_err(kin_err)
     );
     
 endmodule
