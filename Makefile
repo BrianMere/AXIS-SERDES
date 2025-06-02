@@ -148,3 +148,9 @@ deep_clean: clean
 .PHONY: VERILOG_SOURCES
 VERILOG_SOURCES: 
 	@echo $(realpath $(RTL_SRCS))
+
+# These can be run on your own computer (not in the docker container) as long as netlistsvg and yosys are installed. 
+show-%: 
+	yosys -p "prep -top $*; write_json $*_temp.h.json" $(RTL_SRCS)
+	netlistsvg $*_temp.h.json -o $*.svg
+	rm $*_temp.h.json

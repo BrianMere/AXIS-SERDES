@@ -1,13 +1,16 @@
 puts "\[INFO\]: Creating Clocks"
 
-create_clock [get_ports tx_clk] -name tx_clk -period 10
+create_clock [get_ports tx_clk] -name tx_clk -period 15
 set_propagated_clock tx_clk
-create_clock [get_ports rx_clk] -name rx_clk -period 10
+create_clock [get_ports rx_clk] -name rx_clk -period 15
 set_propagated_clock rx_clk
+
+set tx_period [get_property -object_type clock [get_clocks {tx_clk}] period]
+set rx_period [get_property -object_type clock [get_clocks {rx_clk}] period]
 
 set_clock_groups -asynchronous -group [get_clocks {tx_clk rx_clk}]
 
-set clk_phase_period [expr {50}]
+set clk_phase_period [expr {max(${tx_period}, ${rx_period}) * 5}]
 create_clock [get_ports clk_phase[0]] -name clk_phase[0] -period ${clk_phase_period}
 set_propagated_clock clk_phase[0]
 create_clock [get_ports clk_phase[1]] -name clk_phase[1] -period ${clk_phase_period}
@@ -22,9 +25,6 @@ set_propagated_clock clk_phase[4]
 set_clock_groups -asynchronous -group [get_clocks {clk_phase[0] clk_phase[1] clk_phase[2] clk_phase[3] clk_phase[4]}]
 
 puts "\[INFO\]: Setting Max Delay"
-
-set tx_period [get_property -object_type clock [get_clocks {tx_clk}] period]
-set rx_period [get_property -object_type clock [get_clocks {rx_clk}] period]
 
 set min_tx_period      [expr {${tx_period} / 4}]
 set min_rx_period      [expr {${rx_period} / 4}]
