@@ -26,25 +26,13 @@ set_clock_groups -asynchronous -group [get_clocks {clk_phase[0] clk_phase[1] clk
 
 puts "\[INFO\]: Setting Max Delay"
 
-set min_tx_period      [expr {${tx_period} / 4}]
-set min_rx_period      [expr {${rx_period} / 4}]
+# Set the minimum period as the smaller of the two async clock domain periods.
+# For now it's just the slower tx_frequency. This is the one in the AXIS side of the clock domain.
+set min_tx_period      [expr {${tx_period}}]
+set min_rx_period      [expr {${rx_period}}]
 
-set_max_delay -from [get_pins RXFIFO.ReadToWrite.imm[1].out*df*/CLK] -to [get_pins RXFIFO.WriteToRead.imm[1].r1*df*/D] $min_rx_period
-set_max_delay -from [get_pins TXFIFO.ReadToWrite.imm[1].out*df*/CLK] -to [get_pins TXFIFO.WriteToRead.imm[1].r1*df*/D] $min_tx_period
-
-#openlane config.yaml --flow Classic -T openroad.staprepnr 
-#to not run all stages
-
-
-# puts "\[INFO\]: Setting inputs to synchronous"
-# # set_input_delay 0 -clock clk {a_i b_i}
-# # set_output_delay 0 -clock clk {z_o}
-
-# set_multicycle_path -setup 17 -from [get_pins Comb.a_reg*/CLK ] -to  [get_pins  multicycle_out*df*/D]
-# set_multicycle_path -hold  16 -from [get_pins Comb.a_reg*/CLK ] -to  [get_pins  multicycle_out*df*/D]
-
-# set_multicycle_path -setup 17 -from [get_pins Comb.b_reg*/CLK ] -to  [get_pins  multicycle_out*df*/D]
-# set_multicycle_path -hold  16 -from [get_pins Comb.b_reg*/CLK ] -to  [get_pins  multicycle_out*df*/D]
-
-# puts [get_pins Div.a[*]*df*/Q ]
-# puts [get_pins z_o*df*/D]
+# Replace the '1' with NUM_FFS - 1 if that ever changes...
+set_max_delay -from [get_pins RXFIFO.ReadToWrite.imm\[0\]*df*/CLK] -to [get_pins RXFIFO.ReadToWrite.imm\[1\]*df*/D] $min_rx_period
+set_max_delay -from [get_pins RXFIFO.WriteToRead.imm\[0\]*df*/CLK] -to [get_pins RXFIFO.WriteToRead.imm\[1\]*df*/D] $min_rx_period
+set_max_delay -from [get_pins TXFIFO.ReadToWrite.imm\[0\]*df*/CLK] -to [get_pins TXFIFO.ReadToWrite.imm\[1\]*df*/D] $min_tx_period
+set_max_delay -from [get_pins TXFIFO.WriteToRead.imm\[0\]*df*/CLK] -to [get_pins TXFIFO.WriteToRead.imm\[1\]*df*/D] $min_tx_period

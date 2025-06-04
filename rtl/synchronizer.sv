@@ -24,7 +24,7 @@ module synchronizer #(
     output logic [LOGIC_SIZE-1:0] o_output_data
 );
 
-    logic [LOGIC_SIZE-1:0] imm [NUM_FFS-1:0]; // intermediate wire value
+    (* keep *) logic [LOGIC_SIZE-1:0] imm [NUM_FFS-1:0]; // intermediate wire value, need (* keep *) to not optimize the wire out. 
 
     always_comb begin : outputAssign
         o_output_data = imm[NUM_FFS-1]; // always assign the output as the output of the last FF

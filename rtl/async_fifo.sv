@@ -6,10 +6,10 @@
 // BEGIN FUNCTION DEFS
 
 // Returns if the FIFO is empty or not. Only works for the read clock domain. 
-`define IS_EMPTY() (r_gray == wgray_s)
+`define IS_EMPTY (r_gray == wgray_s)
 
 // Returns if the FIFO is full or not. Only works from the write clock domain. 
-`define IS_FULL() ((w_gray[GRAY_WIDTH:GRAY_WIDTH-1] == ~rgray_s[GRAY_WIDTH:GRAY_WIDTH-1]) \
+`define IS_FULL ((w_gray[GRAY_WIDTH:GRAY_WIDTH-1] == ~rgray_s[GRAY_WIDTH:GRAY_WIDTH-1]) \
         && (w_gray[GRAY_WIDTH-2:0] == rgray_s[GRAY_WIDTH-2:0]))
 
 module async_fifo #(
@@ -40,6 +40,10 @@ module async_fifo #(
     // Pointers for the read-write pointers
     fifo_ptr_t r_ptr, w_ptr; // driven here
 
+    // make sure that the gray codes are registered! This is important for all bits
+    // to hit the clock domain crossing at the same time!
+    fifo_ptr_t r_gray, w_gray;
+
     // Gray-code pointers from the OTHER clock domain (here _s suggests it's 'synchronized', so the output of the other OTHER domain)
     fifo_ptr_t rgray_s, wgray_s; // driven by synch.
 
@@ -61,15 +65,15 @@ module async_fifo #(
 
     // Set the values of the flags as combinational circuits
     always_comb begin : flags
-        o_wfull = `IS_FULL();
-        o_rempty = `IS_EMPTY();
+        o_wfull = `IS_FULL;
+        o_rempty = `IS_EMPTY;
     end
 
     // Handle the writing itself (write clock domain)
     always_ff @(posedge i_wclk or negedge i_rst_n) begin : writes
         if(!i_rst_n) w_ptr <= 0; // reset logic
-        else if(!`IS_FULL() && i_wr) begin 
-            queue_data[w_ptr] <= i_wdata;
+        else if(!`IS_FULL && i_wr) begin 
+            queue_data[w_ptr[GRAY_WIDTH-1:0]] <= i_wdata;
             w_ptr <= w_ptr + 1;
         end
     end
@@ -77,15 +81,12 @@ module async_fifo #(
     // Handle the reading itself (read clock domain)
     always_ff @(posedge i_rclk or negedge i_rst_n) begin : reads
         if(!i_rst_n) r_ptr <= 0; // reset logic
-        else if(!`IS_EMPTY() && i_rr) begin 
-            o_rdata <= queue_data[r_ptr];
+        else if(!`IS_EMPTY && i_rr) begin 
+            o_rdata <= queue_data[r_ptr[GRAY_WIDTH-1:0]];
             r_ptr <= r_ptr + 1;
         end
     end
 
-    // make sure that the gray codes are registered! This is important for all bits
-    // to hit the clock domain crossing at the same time!
-    fifo_ptr_t r_gray, w_gray;
     always_ff @(posedge i_rclk or negedge i_rst_n) begin
         if(!i_rst_n) r_gray <= 0; 
         else r_gray <= `GREY_CODE(r_ptr);

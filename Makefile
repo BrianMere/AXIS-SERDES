@@ -149,7 +149,12 @@ deep_clean: clean
 VERILOG_SOURCES: 
 	@echo $(realpath $(RTL_SRCS))
 
+.PHONY: synth
+synth: 
+	openlane $(OPENLANE_CONF) --flow Classic -T openroad.staprepnr 
+
 # These can be run on your own computer (not in the docker container) as long as netlistsvg and yosys are installed. 
+.PHONY: show-% show
 show-%: 
 	yosys -p "prep -top $*; write_json $*_temp.h.json" $(RTL_SRCS)
 	netlistsvg $*_temp.h.json -o $*.svg
