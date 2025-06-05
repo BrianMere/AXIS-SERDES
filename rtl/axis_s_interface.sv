@@ -73,7 +73,7 @@ module axis_s_interface #(
     end
 
     always_comb begin
-        if(!o_empty) begin
+        if(!o_empty && s_axis_ready) begin
             o_rd_en = 1;
         end
         else begin 
