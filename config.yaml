@@ -1,6 +1,6 @@
 {
     "DESIGN_NAME": "top_axi_serdes",
-    "CLOCK_PORT": ["tx_clk", "rx_clk"],
+    "CLOCK_PORT": ["fast_clk"],
     "VERILOG_FILES": "dir::/rtl/*v", 
     "PNR_SDC_FILE": "dir::constraints.sdc", # contains clock information
     "SIGNOFF_SDC_FILE": "dir::constraints.sdc",
