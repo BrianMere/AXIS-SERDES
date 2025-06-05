@@ -45,6 +45,9 @@ assign s_axis_reset_n = m_axis_reset_n;
 always begin
     $dumpfile("tb_top_axi_serdes.vcd");
     $dumpvars(0);
+    m_axis_reset_n <= 1;
+    s_axis_reset_n <= 0;
+    #10;
     m_axis_reset_n <= 0;
     s_axis_valid <= 0;
     m_axis_ready <= 0;

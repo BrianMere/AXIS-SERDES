@@ -25,6 +25,7 @@ module axis_m_interface #(
     logic i_wr_en, i_rd_en, i_empty, i_full;
     data_t i_selected_data;
     strobe_t i_strobe_sel;
+    logic valid_selected_data;
 
     // our transmitted data goes into the FIFO and then is parsed by us to the aFIFO
     sync_fifo #(FIFO_SIZE, LOGIC_SIZE) i_FIFO(
@@ -43,6 +44,7 @@ module axis_m_interface #(
             m_axis_ready <= 0;
             i_wr_en <= 0;
             i_strobe_sel <= 0;
+            valid_selected_data <= 0; // resets will invalidate i_selected_data
         end
         else begin 
             
@@ -56,13 +58,12 @@ module axis_m_interface #(
             end
 
             if(!i_empty && !w_full) begin  // on a non-empty (internal FIFO), read one set of bytes and iterate over the strobe. 
-                w_req <= 1; // we are going to a new byte, so we have to write it to the FIFO
-                if(i_strobe_sel == strobe_t'('1)) begin
-                    i_strobe_sel <= 0; 
-                end
-                else begin 
-                    i_strobe_sel <= i_strobe_sel + 1;
-                end
+                if(valid_selected_data) w_req <= 1; // we are going to a new byte, so we have to write it to the FIFO
+                else w_req <= 0;
+
+                if(i_strobe_sel == strobe_t'('1)-1) valid_selected_data <= 1; // do it the CYCLE BEFORE so that w_req goes at the right time. 
+                if(i_strobe_sel == strobe_t'('1)) i_strobe_sel <= 0; 
+                else i_strobe_sel <= i_strobe_sel + 1;
             end
             else begin 
                 w_req <= 0; // don't rewrite the same data to the aFIFO

@@ -26,48 +26,50 @@ module axis_s_interface #(
     logic o_wr_en, o_rd_en, o_empty, o_full;
     logic [LOGIC_SIZE-1:0] o_selected_data;
     strobe_t o_strobe_sel;
+    logic flag_startup_wr_flag;
 
     always_ff @(posedge s_axis_aclk or negedge s_axis_reset_n) begin
         if(!s_axis_reset_n) begin // reset as wel on 
             s_axis_valid <= 0;
-            o_wr_en <= 0;
-            o_strobe_sel <= 0;
+            o_strobe_sel <= strobe_t'('1);
         end
-        else begin 
-            
-            if(s_axis_ready && !o_full && 
+        else begin
+
+            if(s_axis_ready && !o_full && !r_empty && 
                 o_strobe_sel == strobe_t'('1)
             ) begin // the user wants to receive data, so try to pull from the FIFO
-                o_wr_en <= 1;
-                s_axis_valid <= 1;
+                if(!flag_startup_wr_flag) flag_startup_wr_flag <= 1;
+                else o_wr_en <= 1;
             end
             else o_wr_en <= 0;
-            if(!s_axis_ready) s_axis_valid <= 0;
+
+            if(o_rd_en) s_axis_valid <= 1;
+            else s_axis_valid <= 0;
 
             if(!o_full && !r_empty) begin  // on a non-full (internal FIFO), read one set of bytes and iterate over the strobe. 
-
-                r_req <= 1; // we are going to a new byte, so we have to write it to the FIFO
-                o_selected_data[o_strobe_sel*8 +: 8] <= i_from_fifo;
+                if(r_req) o_selected_data[o_strobe_sel*8 +: 8] <= i_from_fifo;
 
                 if(o_strobe_sel == strobe_t'('1)) begin
                     o_strobe_sel <= 0;
                 end
-                else begin 
+                else if(r_req) begin 
                     o_strobe_sel <= o_strobe_sel + 1;
                 end
-            end
-            else begin 
-                r_req <= 0; // don't rewrite the same data to the aFIFO
             end
 
             if(!o_empty) begin 
                 if(o_strobe_sel == strobe_t'('1))
                     o_strobe_sel <= 0;
-                else 
+                else
                     o_strobe_sel <= o_strobe_sel + 1;
             end
         
         end
+    end
+
+    always_comb begin
+        if(!o_full && !r_empty) r_req = 1; // we are going to a new byte, so we have to write it to the FIFO
+        else r_req = 0; // don't rewrite same data to aFIFO
     end
 
     always_comb begin

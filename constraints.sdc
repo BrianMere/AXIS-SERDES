@@ -1,8 +1,8 @@
 puts "\[INFO\]: Creating Clocks"
 
-create_clock [get_ports tx_clk] -name tx_clk -period 15
+create_clock [get_ports tx_clk] -name tx_clk -period 11
 set_propagated_clock tx_clk
-create_clock [get_ports rx_clk] -name rx_clk -period 15
+create_clock [get_ports rx_clk] -name rx_clk -period 11
 set_propagated_clock rx_clk
 
 set tx_period [get_property -object_type clock [get_clocks {tx_clk}] period]

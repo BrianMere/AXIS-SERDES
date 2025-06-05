@@ -26,16 +26,19 @@ module comma_detector #(
     logic [7:0] decoded_data;
     logic [4:0] bit_align_counter;
     logic kout;
+    logic hit_a_comma; // flag to indicate after reset we have already hit a comma. 
 
     always_ff @(posedge clk) begin 
         if(rst) shift_reg <= 0;
-        //else shift_reg <= {shift_reg[8:0], strobin};
         else shift_reg <= {strobin, shift_reg[9:1]};
 
         if(rst) bit_align_counter <= 0; // reset on comma or reset
         else if(bit_align_counter == 9) bit_align_counter <= 0; // overflow
         else if(`COMMA_DETECTED) bit_align_counter <= 1; // we detected at cycle 0 so we offset by 1
         else bit_align_counter <= bit_align_counter + 1;
+
+        if(rst) hit_a_comma <= 0;
+        else if(`COMMA_DETECTED) hit_a_comma <= 1;
     end
 
     // debug information... 
@@ -48,7 +51,7 @@ module comma_detector #(
         if(rst) fifo_wen <= 0;
 
         else if(!kout) begin 
-            if(bit_align_counter == 0 && !kout) begin 
+            if(bit_align_counter == 0 && hit_a_comma) begin 
                 fifo_wen <= !fifo_full; // all we can do, if the fifo is full, is respect it. This is the crux that doesn't allow this to be 100\% correct.
             end
             else begin 
@@ -62,17 +65,6 @@ module comma_detector #(
 
         if(bit_align_counter == 9) 
             dout <= decoded_data;
-        
-    end
-
-    always_comb begin 
-        // and the data we want to write is from the decoder always
-        // if(disp) begin 
-        //     dout = ~decoded_data;
-        // end
-        // else begin 
-        //     dout = decoded_data;
-        // end
         
     end
 

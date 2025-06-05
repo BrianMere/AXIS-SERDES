@@ -30,6 +30,8 @@ module comma_counter #(
     logic [9:0] encoded_data;
     logic [7:0] enc_in; // mux between the comma byte and the not comma byte
     
+    logic flag_first_read; // flag for the first read after reset
+    
     always_comb begin : ReadingFromFIFO
         // Always needs to be combinational, based on CURRENT state
         fifo_ren = !(`KIN_VAL) && b_counter == 9; // kin is high for commas, so we should not read on comma sends. 
@@ -40,8 +42,10 @@ module comma_counter #(
         if(rst || kin_err) begin // only 'send' commas for resets and errors of the kin
             kin <= 1;
             enc_in <= `COMMA;
+            flag_first_read <= 0;
         end
-        else if (b_counter == 8) begin // update on the new comma count
+        else if (fifo_ren) flag_first_read <= 1;
+        else if (b_counter == 8 && flag_first_read) begin // update on the new comma count
             kin <= `KIN_VAL;
             case (`KIN_VAL)
                 1: enc_in <= `COMMA;
