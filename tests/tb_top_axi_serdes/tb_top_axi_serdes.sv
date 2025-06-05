@@ -16,7 +16,7 @@ logic [31:0] m_axis_tdata, s_axis_tdata;
 logic m_axis_valid, s_axis_valid;
 logic m_axis_ready, s_axis_ready;
 
-logic tx_clk, rx_clk;
+logic fast_clk;
 
 logic [NumPhase-1:0] clk_phase;
 
@@ -36,8 +36,7 @@ generate
     end
 endgenerate
 
-assign tx_clk = clk_phase[0];
-assign rx_clk = clk_phase[0];
+assign fast_clk = clk_phase[0];
 assign s_axis_reset_n = m_axis_reset_n;
 
 
