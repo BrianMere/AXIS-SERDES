@@ -1,0 +1,10 @@
+AXI-Stream SERDES
+
+RTL design of an AXI-Stream interface to SERDES. 
+
+The top level module is `top_axi_serdes.sv`. 
+
+IP:
+- `encoder8b10.v` 
+- `decoder8b10b.v`
+
